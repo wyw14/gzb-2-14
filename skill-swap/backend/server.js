@@ -7,7 +7,7 @@ const { readJson, writeJson } = require('./utils/storage');
 const { findMatchesForUser } = require('./utils/matching');
 
 const app = express();
-const PORT = 3000;
+const PORT = 4114;
 const JWT_SECRET = 'skill-swap-secret-key-2024';
 
 app.use(cors());
