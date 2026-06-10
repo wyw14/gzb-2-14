@@ -58,7 +58,7 @@
       <div v-if="activeTab === 'skills'" class="ranking-content">
         <div ref="skillChartRef" style="height: 400px"></div>
         <div class="ranking-list">
-          <div v-for="(skill, index) in popularSkills" :key="skill.name" class="ranking-item">
+          <div v-for="(skill, index) in filteredPopularSkills" :key="skill.name" class="ranking-item">
             <div class="rank-num" :class="`rank-${index + 1}`">{{ index + 1 }}</div>
             <div class="rank-info">
               <span class="rank-name">{{ skill.name }}</span>
@@ -161,12 +161,23 @@ const rankActiveDirections = computed(() => {
   return cat ? cat.directions.filter(d => d.active) : []
 })
 
+const filteredPopularSkills = computed(() => {
+  let result = popularSkills.value
+  if (rankFilter.value.category) {
+    result = result.filter(s => s.category === rankFilter.value.category)
+  }
+  if (rankFilter.value.direction) {
+    result = result.filter(s => s.direction === rankFilter.value.direction)
+  }
+  return result
+})
+
 const demandSkills = computed(() =>
-  [...popularSkills.value].sort((a, b) => b.demand - a.demand)
+  [...filteredPopularSkills.value].sort((a, b) => b.demand - a.demand)
 )
 
 const maxCount = computed(() =>
-  Math.max(...popularSkills.value.map(s => Math.max(s.teachCount, s.learnCount)), 1)
+  Math.max(...filteredPopularSkills.value.map(s => Math.max(s.teachCount, s.learnCount)), 1)
 )
 
 onMounted(async () => {
@@ -181,7 +192,7 @@ function onRankCategoryChange() {
 }
 
 async function loadCategories() {
-  const res = await skillAPI.getCategories({ activeOnly: 'true' })
+  const res = await skillAPI.getCategories()
   categories.value = res.data
 }
 
@@ -189,6 +200,14 @@ watch(activeTab, (newTab) => {
   if (newTab === 'skills') {
     setTimeout(() => initSkillChart(), 100)
   } else if (newTab === 'demand') {
+    setTimeout(() => initDemandChart(), 100)
+  }
+})
+
+watch([() => rankFilter.value.category, () => rankFilter.value.direction], () => {
+  if (activeTab.value === 'skills') {
+    setTimeout(() => initSkillChart(), 100)
+  } else if (activeTab.value === 'demand') {
     setTimeout(() => initDemandChart(), 100)
   }
 })
@@ -213,6 +232,13 @@ async function loadPopularSkills() {
   setTimeout(() => initSkillChart(), 100)
 }
 
+function getCategoryLabelById(category, direction) {
+  const cat = categories.value.find(c => c.id === category)
+  if (!cat) return ''
+  const dir = cat.directions.find(d => d.id === direction)
+  return dir ? `${cat.icon} ${cat.name} / ${dir.name}` : ''
+}
+
 async function loadTopUsers() {
   const res = await authAPI.getUsers({})
   topUsers.value = res.data
@@ -229,22 +255,23 @@ function initSkillChart() {
   if (skillChart) skillChart.dispose()
   skillChart = echarts.init(skillChartRef.value)
 
+  const chartData = filteredPopularSkills.value.slice(0, 10)
   const option = {
     tooltip: { trigger: 'axis' },
     legend: { data: ['可教人数', '想学人数'] },
-    xAxis: { type: 'category', data: popularSkills.value.slice(0, 10).map(s => s.name) },
+    xAxis: { type: 'category', data: chartData.map(s => s.name) },
     yAxis: { type: 'value' },
     series: [
       {
         name: '可教人数',
         type: 'bar',
-        data: popularSkills.value.slice(0, 10).map(s => s.teachCount),
+        data: chartData.map(s => s.teachCount),
         itemStyle: { color: '#67c23a' }
       },
       {
         name: '想学人数',
         type: 'bar',
-        data: popularSkills.value.slice(0, 10).map(s => s.learnCount),
+        data: chartData.map(s => s.learnCount),
         itemStyle: { color: '#e6a23c' }
       }
     ]

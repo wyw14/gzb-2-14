@@ -175,7 +175,7 @@ watch(skillTree, () => {
 }, { deep: true })
 
 async function loadCategories() {
-  const res = await skillAPI.getCategories({ activeOnly: 'true' })
+  const res = await skillAPI.getCategories()
   categories.value = res.data
 }
 
