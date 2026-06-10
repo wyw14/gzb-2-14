@@ -69,6 +69,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/admin/categories',
+    name: 'AdminCategories',
+    component: () => import('../views/AdminCategories.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/exchanges',
     name: 'Exchanges',
     component: () => import('../views/Exchanges.vue'),

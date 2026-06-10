@@ -33,6 +33,7 @@
               <span v-for="skill in teachSkills" :key="skill.id" class="skill-tag skill-teach">
                 {{ skill.name }}
                 <small>{{ skill.level }}</small>
+                <small class="tag-category">{{ getCategoryLabel(skill) }}</small>
               </span>
             </div>
             <el-empty v-if="teachSkills.length === 0" description="暂无" :image-size="60" />
@@ -42,6 +43,7 @@
             <div class="skills-tags">
               <span v-for="skill in learnSkills" :key="skill.id" class="skill-tag skill-learn">
                 {{ skill.name }}
+                <small class="tag-category">{{ getCategoryLabel(skill) }}</small>
               </span>
             </div>
             <el-empty v-if="learnSkills.length === 0" description="暂无" :image-size="60" />
@@ -72,20 +74,34 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { authAPI, reviewAPI } from '../api'
+import { authAPI, reviewAPI, skillAPI } from '../api'
 
 const route = useRoute()
 const router = useRouter()
 const user = ref(null)
 const reviews = ref([])
+const categories = ref([])
 
 const teachSkills = computed(() => user.value?.skills?.filter(s => s.type === 'teach') || [])
 const learnSkills = computed(() => user.value?.skills?.filter(s => s.type === 'learn') || [])
 
 onMounted(async () => {
+  await loadCategories()
   await loadUser()
   await loadReviews()
 })
+
+async function loadCategories() {
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
+  categories.value = res.data
+}
+
+function getCategoryLabel(skill) {
+  const cat = categories.value.find(c => c.id === skill.category)
+  if (!cat) return skill.category
+  const dir = cat.directions.find(d => d.id === skill.direction)
+  return dir ? `${cat.icon} ${cat.name} / ${dir.name}` : `${cat.icon} ${cat.name}`
+}
 
 async function loadUser() {
   try {
@@ -189,6 +205,14 @@ function goToChat() {
 .skill-tag small {
   opacity: 0.8;
   margin-left: 4px;
+}
+
+.tag-category {
+  color: #667eea !important;
+  background: #667eea15;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 11px;
 }
 
 .reviews-list {

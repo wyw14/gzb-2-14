@@ -86,8 +86,11 @@
         <el-input v-model="filters.keyword" placeholder="搜索技能或用户" style="width: 200px" clearable>
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-select v-model="filters.category" placeholder="技能类别" clearable style="width: 160px">
-          <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        <el-select v-model="filters.category" placeholder="技能领域" clearable style="width: 160px" @change="onHomeCategoryChange">
+          <el-option v-for="cat in activeCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        </el-select>
+        <el-select v-model="filters.direction" placeholder="具体方向" clearable style="width: 160px" :disabled="!filters.category">
+          <el-option v-for="dir in homeActiveDirections" :key="dir.id" :label="dir.name" :value="dir.id" />
         </el-select>
         <el-select v-model="filters.minRating" placeholder="最低评分" clearable style="width: 140px">
           <el-option label="4分以上" :value="4" />
@@ -118,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { statsAPI, matchAPI, authAPI, skillAPI } from '../api'
 import { Search } from '@element-plus/icons-vue'
@@ -129,7 +132,17 @@ const popularSkills = ref([])
 const recommendedMatches = ref([])
 const users = ref([])
 const categories = ref([])
-const filters = ref({ keyword: '', category: '', minRating: '' })
+const filters = ref({ keyword: '', category: '', direction: '', minRating: '' })
+
+const activeCategories = computed(() =>
+  categories.value.filter(c => c.active)
+)
+
+const homeActiveDirections = computed(() => {
+  if (!filters.value.category) return []
+  const cat = categories.value.find(c => c.id === filters.value.category)
+  return cat ? cat.directions.filter(d => d.active) : []
+})
 
 onMounted(async () => {
   await loadStats()
@@ -157,8 +170,12 @@ async function loadMatches() {
 }
 
 async function loadCategories() {
-  const res = await skillAPI.getCategories()
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
   categories.value = res.data
+}
+
+function onHomeCategoryChange() {
+  filters.value.direction = ''
 }
 
 async function loadUsers() {

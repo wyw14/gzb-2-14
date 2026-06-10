@@ -46,6 +46,15 @@
         </div>
       </div>
 
+      <div class="ranking-filter">
+        <el-select v-model="rankFilter.category" placeholder="筛选领域" clearable style="width: 160px" @change="onRankCategoryChange">
+          <el-option v-for="cat in activeCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        </el-select>
+        <el-select v-model="rankFilter.direction" placeholder="筛选方向" clearable style="width: 160px" :disabled="!rankFilter.category">
+          <el-option v-for="dir in rankActiveDirections" :key="dir.id" :label="dir.name" :value="dir.id" />
+        </el-select>
+      </div>
+
       <div v-if="activeTab === 'skills'" class="ranking-content">
         <div ref="skillChartRef" style="height: 400px"></div>
         <div class="ranking-list">
@@ -53,6 +62,7 @@
             <div class="rank-num" :class="`rank-${index + 1}`">{{ index + 1 }}</div>
             <div class="rank-info">
               <span class="rank-name">{{ skill.name }}</span>
+              <span v-if="skill.categoryLabel" class="rank-category-label">{{ skill.categoryLabel }}</span>
               <div class="rank-bars">
                 <div class="bar-item">
                   <span class="bar-label">可教</span>
@@ -126,7 +136,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { statsAPI, authAPI } from '../api'
+import { statsAPI, authAPI, skillAPI } from '../api'
 import * as echarts from 'echarts'
 
 const router = useRouter()
@@ -134,10 +144,22 @@ const activeTab = ref('skills')
 const stats = ref({ totalUsers: 0, totalSkills: 0, completedExchanges: 0, successRate: 0 })
 const popularSkills = ref([])
 const topUsers = ref([])
+const categories = ref([])
+const rankFilter = ref({ category: '', direction: '' })
 const skillChartRef = ref(null)
 const demandChartRef = ref(null)
 let skillChart = null
 let demandChart = null
+
+const activeCategories = computed(() =>
+  categories.value.filter(c => c.active)
+)
+
+const rankActiveDirections = computed(() => {
+  if (!rankFilter.value.category) return []
+  const cat = categories.value.find(c => c.id === rankFilter.value.category)
+  return cat ? cat.directions.filter(d => d.active) : []
+})
 
 const demandSkills = computed(() =>
   [...popularSkills.value].sort((a, b) => b.demand - a.demand)
@@ -148,10 +170,20 @@ const maxCount = computed(() =>
 )
 
 onMounted(async () => {
+  await loadCategories()
   await loadStats()
   await loadPopularSkills()
   await loadTopUsers()
 })
+
+function onRankCategoryChange() {
+  rankFilter.value.direction = ''
+}
+
+async function loadCategories() {
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
+  categories.value = res.data
+}
 
 watch(activeTab, (newTab) => {
   if (newTab === 'skills') {
@@ -168,7 +200,16 @@ async function loadStats() {
 
 async function loadPopularSkills() {
   const res = await statsAPI.getPopularSkills()
-  popularSkills.value = res.data.slice(0, 15)
+  popularSkills.value = res.data.slice(0, 15).map(skill => {
+    const cat = categories.value.find(c =>
+      c.directions.some(d => d.id === skill.direction)
+    )
+    const dir = cat?.directions.find(d => d.id === skill.direction)
+    return {
+      ...skill,
+      categoryLabel: cat && dir ? `${cat.icon} ${cat.name} / ${dir.name}` : ''
+    }
+  })
   setTimeout(() => initSkillChart(), 100)
 }
 
@@ -280,8 +321,23 @@ function goToProfile(userId) {
 .ranking-tabs {
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   border-bottom: 2px solid #eee;
+}
+
+.ranking-filter {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.rank-category-label {
+  font-size: 12px;
+  color: #667eea;
+  background: #667eea15;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
 }
 
 .tab {

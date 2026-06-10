@@ -21,7 +21,7 @@
         <div class="skills-list">
           <div v-for="skill in filteredSkills" :key="skill.id" class="skill-item">
             <span class="skill-name">{{ skill.name }}</span>
-            <span class="skill-category">{{ getCategoryName(skill.category) }}</span>
+            <span class="skill-category">{{ getCategoryLabel(skill) }}</span>
             <span class="skill-level">{{ skill.level }}</span>
             <span class="skill-desc">{{ skill.description }}</span>
             <el-button type="danger" size="small" @click="deleteSkill(skill.id)">删除</el-button>
@@ -34,9 +34,15 @@
           <el-input v-model="form.name" placeholder="例如：Python编程、吉他演奏、英语口语" size="large" />
         </el-form-item>
 
-        <el-form-item prop="category" label="技能类别">
-          <el-select v-model="form.category" placeholder="选择类别" size="large" style="width: 100%">
-            <el-option v-for="cat in categories" :key="cat.id" :label="`${cat.icon} ${cat.name}`" :value="cat.id" />
+        <el-form-item prop="category" label="技能领域">
+          <el-select v-model="form.category" placeholder="选择领域" size="large" style="width: 100%" @change="onDomainChange">
+            <el-option v-for="cat in activeCategories" :key="cat.id" :label="`${cat.icon} ${cat.name}`" :value="cat.id" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item prop="direction" label="具体方向">
+          <el-select v-model="form.direction" placeholder="先选择领域，再选择方向" size="large" style="width: 100%" :disabled="!form.category">
+            <el-option v-for="dir in activeDirections" :key="dir.id" :label="dir.name" :value="dir.id" />
           </el-select>
         </el-form-item>
 
@@ -114,6 +120,16 @@ const categories = ref([])
 const mySkills = ref([])
 const hasPreferences = ref(false)
 
+const activeCategories = computed(() =>
+  categories.value.filter(c => c.active)
+)
+
+const activeDirections = computed(() => {
+  if (!form.value.category) return []
+  const cat = categories.value.find(c => c.id === form.value.category)
+  return cat ? cat.directions.filter(d => d.active) : []
+})
+
 const tabs = [
   { value: 'teach', label: '我可以教', icon: '🎓' },
   { value: 'learn', label: '我想要学', icon: '📖' }
@@ -122,6 +138,7 @@ const tabs = [
 const form = ref({
   name: '',
   category: '',
+  direction: '',
   type: 'teach',
   level: '中级',
   description: '',
@@ -136,7 +153,8 @@ const prefsForm = ref({
 
 const rules = {
   name: [{ required: true, message: '请输入技能名称', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择技能类别', trigger: 'change' }]
+  category: [{ required: true, message: '请选择技能领域', trigger: 'change' }],
+  direction: [{ required: true, message: '请选择具体方向', trigger: 'change' }]
 }
 
 const filteredSkills = computed(() =>
@@ -150,7 +168,7 @@ onMounted(async () => {
 })
 
 async function loadCategories() {
-  const res = await skillAPI.getCategories()
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
   categories.value = res.data
 }
 
@@ -168,9 +186,15 @@ function checkPreferences() {
   }
 }
 
-function getCategoryName(id) {
-  const cat = categories.value.find(c => c.id === id)
-  return cat ? `${cat.icon} ${cat.name}` : id
+function getCategoryLabel(skill) {
+  const cat = categories.value.find(c => c.id === skill.category)
+  if (!cat) return skill.category
+  const dir = cat.directions.find(d => d.id === skill.direction)
+  return dir ? `${cat.icon} ${cat.name} / ${dir.name}` : `${cat.icon} ${cat.name}`
+}
+
+function onDomainChange() {
+  form.value.direction = ''
 }
 
 async function publish() {
@@ -185,6 +209,7 @@ async function publish() {
     form.value = {
       name: '',
       category: '',
+      direction: '',
       type: activeTab.value,
       level: '中级',
       description: '',
@@ -298,6 +323,10 @@ async function savePreferences() {
 .skill-category {
   color: #667eea;
   font-size: 13px;
+  background: #667eea15;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
 }
 
 .skill-level {

@@ -125,11 +125,14 @@ app.put('/api/users/profile', authMiddleware, (req, res) => {
 
 app.get('/api/skills', authMiddleware, (req, res) => {
   const skills = readJson('skills.json');
-  const { category, type, userId } = req.query;
+  const { category, direction, type, userId } = req.query;
   let filtered = skills;
 
   if (category) {
     filtered = filtered.filter(s => s.category === category);
+  }
+  if (direction) {
+    filtered = filtered.filter(s => s.direction === direction);
   }
   if (type) {
     filtered = filtered.filter(s => s.type === type);
@@ -142,10 +145,13 @@ app.get('/api/skills', authMiddleware, (req, res) => {
 });
 
 app.post('/api/skills', authMiddleware, (req, res) => {
-  const { name, category, type } = req.body;
+  const { name, category, direction, type } = req.body;
 
   if (!name || !category || !type) {
     return res.status(400).json({ error: '请填写技能名称、类别和类型' });
+  }
+  if (!direction) {
+    return res.status(400).json({ error: '请选择具体方向' });
   }
   if (!['teach', 'learn'].includes(type)) {
     return res.status(400).json({ error: '技能类型无效，应为"可教"或"想学"' });
@@ -188,7 +194,7 @@ app.delete('/api/skills/:id', authMiddleware, (req, res) => {
 app.get('/api/matches', authMiddleware, (req, res) => {
   const users = readJson('users.json');
   const skills = readJson('skills.json');
-  const { minScore, category } = req.query;
+  const { minScore, category, direction } = req.query;
 
   let matches = findMatchesForUser(req.user.id, users, skills);
 
@@ -200,6 +206,11 @@ app.get('/api/matches', authMiddleware, (req, res) => {
       m.matchedSkills.iCanTeach.some(s => s.includes(category)) ||
       m.matchedSkills.iCanLearn.some(s => s.includes(category))
     );
+  }
+  if (direction) {
+    const directionSkills = skills.filter(s => s.direction === direction);
+    const directionUserIds = directionSkills.map(s => s.userId);
+    matches = matches.filter(m => directionUserIds.includes(m.userId));
   }
 
   res.json(matches);
@@ -418,7 +429,7 @@ app.get('/api/stats/popular-skills', (req, res) => {
 
   skills.forEach(s => {
     if (!skillCount[s.name]) {
-      skillCount[s.name] = { teach: 0, learn: 0 };
+      skillCount[s.name] = { teach: 0, learn: 0, category: s.category, direction: s.direction };
     }
     skillCount[s.name][s.type]++;
   });
@@ -429,7 +440,9 @@ app.get('/api/stats/popular-skills', (req, res) => {
       teachCount: counts.teach,
       learnCount: counts.learn,
       total: counts.teach + counts.learn,
-      demand: counts.learn - counts.teach
+      demand: counts.learn - counts.teach,
+      category: counts.category,
+      direction: counts.direction
     }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 20);
@@ -457,7 +470,129 @@ app.get('/api/stats/success-rate', (req, res) => {
 
 app.get('/api/skill-categories', (req, res) => {
   const categories = readJson('skillCategories.json');
-  res.json(categories);
+  const { activeOnly } = req.query;
+  let result = categories;
+  if (activeOnly === 'true') {
+    result = categories
+      .filter(c => c.active)
+      .map(c => ({
+        ...c,
+        directions: c.directions.filter(d => d.active)
+      }));
+  }
+  res.json(result);
+});
+
+app.post('/api/skill-categories', authMiddleware, (req, res) => {
+  const { name, icon, id } = req.body;
+  if (!name || !id) {
+    return res.status(400).json({ error: '请填写领域ID和名称' });
+  }
+  const categories = readJson('skillCategories.json');
+  if (categories.find(c => c.id === id)) {
+    return res.status(400).json({ error: '领域ID已存在' });
+  }
+  const newCategory = { id, name, icon: icon || '📁', active: true, directions: [] };
+  categories.push(newCategory);
+  writeJson('skillCategories.json', categories);
+  res.json(newCategory);
+});
+
+app.put('/api/skill-categories/:id', authMiddleware, (req, res) => {
+  const categories = readJson('skillCategories.json');
+  const index = categories.findIndex(c => c.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  categories[index] = { ...categories[index], ...req.body, id: req.params.id };
+  if (!categories[index].directions) categories[index].directions = [];
+  writeJson('skillCategories.json', categories);
+  res.json(categories[index]);
+});
+
+app.put('/api/skill-categories/:id/toggle', authMiddleware, (req, res) => {
+  const categories = readJson('skillCategories.json');
+  const index = categories.findIndex(c => c.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  categories[index].active = !categories[index].active;
+  writeJson('skillCategories.json', categories);
+  res.json(categories[index]);
+});
+
+app.delete('/api/skill-categories/:id', authMiddleware, (req, res) => {
+  const categories = readJson('skillCategories.json');
+  const filtered = categories.filter(c => c.id !== req.params.id);
+  if (filtered.length === categories.length) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  writeJson('skillCategories.json', filtered);
+  res.json({ success: true });
+});
+
+app.post('/api/skill-categories/:id/directions', authMiddleware, (req, res) => {
+  const { id: dirId, name } = req.body;
+  if (!dirId || !name) {
+    return res.status(400).json({ error: '请填写方向ID和名称' });
+  }
+  const categories = readJson('skillCategories.json');
+  const catIndex = categories.findIndex(c => c.id === req.params.id);
+  if (catIndex === -1) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  if (categories[catIndex].directions.find(d => d.id === dirId)) {
+    return res.status(400).json({ error: '方向ID已存在' });
+  }
+  const newDir = { id: dirId, name, active: true };
+  categories[catIndex].directions.push(newDir);
+  writeJson('skillCategories.json', categories);
+  res.json(newDir);
+});
+
+app.put('/api/skill-categories/:catId/directions/:dirId', authMiddleware, (req, res) => {
+  const categories = readJson('skillCategories.json');
+  const catIndex = categories.findIndex(c => c.id === req.params.catId);
+  if (catIndex === -1) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  const dirIndex = categories[catIndex].directions.findIndex(d => d.id === req.params.dirId);
+  if (dirIndex === -1) {
+    return res.status(404).json({ error: '方向不存在' });
+  }
+  categories[catIndex].directions[dirIndex] = {
+    ...categories[catIndex].directions[dirIndex],
+    ...req.body,
+    id: req.params.dirId
+  };
+  writeJson('skillCategories.json', categories);
+  res.json(categories[catIndex].directions[dirIndex]);
+});
+
+app.put('/api/skill-categories/:catId/directions/:dirId/toggle', authMiddleware, (req, res) => {
+  const categories = readJson('skillCategories.json');
+  const catIndex = categories.findIndex(c => c.id === req.params.catId);
+  if (catIndex === -1) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  const dirIndex = categories[catIndex].directions.findIndex(d => d.id === req.params.dirId);
+  if (dirIndex === -1) {
+    return res.status(404).json({ error: '方向不存在' });
+  }
+  categories[catIndex].directions[dirIndex].active = !categories[catIndex].directions[dirIndex].active;
+  writeJson('skillCategories.json', categories);
+  res.json(categories[catIndex].directions[dirIndex]);
+});
+
+app.delete('/api/skill-categories/:catId/directions/:dirId', authMiddleware, (req, res) => {
+  const categories = readJson('skillCategories.json');
+  const catIndex = categories.findIndex(c => c.id === req.params.catId);
+  if (catIndex === -1) {
+    return res.status(404).json({ error: '领域不存在' });
+  }
+  categories[catIndex].directions = categories[catIndex].directions.filter(d => d.id !== req.params.dirId);
+  writeJson('skillCategories.json', categories);
+  res.json({ success: true });
 });
 
 app.get('/api/users/:userId', (req, res) => {

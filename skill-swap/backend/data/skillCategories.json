@@ -1,12 +1,124 @@
 [
-  {"id": "programming", "name": "编程开发", "icon": "💻"},
-  {"id": "language", "name": "语言学习", "icon": "🌍"},
-  {"id": "music", "name": "音乐艺术", "icon": "🎵"},
-  {"id": "design", "name": "设计创意", "icon": "🎨"},
-  {"id": "cooking", "name": "烹饪美食", "icon": "🍳"},
-  {"id": "fitness", "name": "健身运动", "icon": "💪"},
-  {"id": "business", "name": "商业金融", "icon": "📊"},
-  {"id": "photo", "name": "摄影摄像", "icon": "📷"},
-  {"id": "writing", "name": "写作编辑", "icon": "✍️"},
-  {"id": "other", "name": "其他技能", "icon": "✨"}
+  {
+    "id": "programming",
+    "name": "编程开发",
+    "icon": "💻",
+    "active": true,
+    "directions": [
+      { "id": "frontend", "name": "前端开发", "active": true },
+      { "id": "backend", "name": "后端开发", "active": true },
+      { "id": "mobile", "name": "移动开发", "active": true },
+      { "id": "devops", "name": "运维部署", "active": true },
+      { "id": "data-eng", "name": "数据工程", "active": true }
+    ]
+  },
+  {
+    "id": "language",
+    "name": "语言学习",
+    "icon": "🌍",
+    "active": true,
+    "directions": [
+      { "id": "english", "name": "英语", "active": true },
+      { "id": "japanese", "name": "日语", "active": true },
+      { "id": "korean", "name": "韩语", "active": true },
+      { "id": "european", "name": "欧洲语系", "active": true },
+      { "id": "southeast-asian", "name": "东南亚语系", "active": true }
+    ]
+  },
+  {
+    "id": "music",
+    "name": "音乐艺术",
+    "icon": "🎵",
+    "active": true,
+    "directions": [
+      { "id": "instrument", "name": "器乐演奏", "active": true },
+      { "id": "vocal", "name": "声乐演唱", "active": true },
+      { "id": "composition", "name": "编曲制作", "active": true },
+      { "id": "music-theory", "name": "乐理知识", "active": true }
+    ]
+  },
+  {
+    "id": "design",
+    "name": "设计创意",
+    "icon": "🎨",
+    "active": true,
+    "directions": [
+      { "id": "ui-design", "name": "UI/UX设计", "active": true },
+      { "id": "graphic", "name": "平面设计", "active": true },
+      { "id": "3d-design", "name": "3D建模", "active": true },
+      { "id": "motion", "name": "动效设计", "active": true }
+    ]
+  },
+  {
+    "id": "cooking",
+    "name": "烹饪美食",
+    "icon": "🍳",
+    "active": true,
+    "directions": [
+      { "id": "chinese-cuisine", "name": "中餐烹饪", "active": true },
+      { "id": "western-cuisine", "name": "西餐烹饪", "active": true },
+      { "id": "baking", "name": "烘焙甜点", "active": true },
+      { "id": "beverage", "name": "饮品调制", "active": true }
+    ]
+  },
+  {
+    "id": "fitness",
+    "name": "健身运动",
+    "icon": "💪",
+    "active": true,
+    "directions": [
+      { "id": "strength", "name": "力量训练", "active": true },
+      { "id": "yoga", "name": "瑜伽普拉提", "active": true },
+      { "id": "combat", "name": "搏击格斗", "active": true },
+      { "id": "ball-sports", "name": "球类运动", "active": true }
+    ]
+  },
+  {
+    "id": "business",
+    "name": "商业金融",
+    "icon": "📊",
+    "active": true,
+    "directions": [
+      { "id": "investing", "name": "投资理财", "active": true },
+      { "id": "marketing", "name": "市场营销", "active": true },
+      { "id": "entrepreneurship", "name": "创业管理", "active": true },
+      { "id": "accounting", "name": "财务会计", "active": true }
+    ]
+  },
+  {
+    "id": "photo",
+    "name": "摄影摄像",
+    "icon": "📷",
+    "active": true,
+    "directions": [
+      { "id": "portrait", "name": "人像摄影", "active": true },
+      { "id": "landscape", "name": "风光摄影", "active": true },
+      { "id": "videography", "name": "视频拍摄", "active": true },
+      { "id": "post-production", "name": "后期修图", "active": true }
+    ]
+  },
+  {
+    "id": "writing",
+    "name": "写作编辑",
+    "icon": "✍️",
+    "active": true,
+    "directions": [
+      { "id": "copywriting", "name": "文案写作", "active": true },
+      { "id": "fiction", "name": "小说创作", "active": true },
+      { "id": "technical-writing", "name": "技术文档", "active": true },
+      { "id": "content-ops", "name": "内容运营", "active": true }
+    ]
+  },
+  {
+    "id": "other",
+    "name": "其他技能",
+    "icon": "✨",
+    "active": true,
+    "directions": [
+      { "id": "handcraft", "name": "手工制作", "active": true },
+      { "id": "pet-care", "name": "宠物养护", "active": true },
+      { "id": "gardening", "name": "园艺种植", "active": true },
+      { "id": "other-misc", "name": "其他", "active": true }
+    ]
+  }
 ]

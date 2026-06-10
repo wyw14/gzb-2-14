@@ -64,9 +64,14 @@
         <el-form-item label="技能名称">
           <el-input v-model="nodeForm.name" placeholder="例如：Python" />
         </el-form-item>
-        <el-form-item label="技能类别">
-          <el-select v-model="nodeForm.category" style="width: 100%">
-            <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        <el-form-item label="技能领域">
+          <el-select v-model="nodeForm.category" style="width: 100%" @change="onTreeCategoryChange">
+            <el-option v-for="cat in activeCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="具体方向">
+          <el-select v-model="nodeForm.direction" style="width: 100%" :disabled="!nodeForm.category">
+            <el-option v-for="dir in treeActiveDirections" :key="dir.id" :label="dir.name" :value="dir.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="当前等级">
@@ -114,8 +119,19 @@ let chartInstance = null
 const nodeForm = ref({
   name: '',
   category: '',
+  direction: '',
   level: '入门',
   status: 'planning'
+})
+
+const activeCategories = computed(() =>
+  categories.value.filter(c => c.active)
+)
+
+const treeActiveDirections = computed(() => {
+  if (!nodeForm.value.category) return []
+  const cat = categories.value.find(c => c.id === nodeForm.value.category)
+  return cat ? cat.directions.filter(d => d.active) : []
 })
 
 const totalNodes = computed(() => skillTree.value.length)
@@ -159,8 +175,12 @@ watch(skillTree, () => {
 }, { deep: true })
 
 async function loadCategories() {
-  const res = await skillAPI.getCategories()
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
   categories.value = res.data
+}
+
+function onTreeCategoryChange() {
+  nodeForm.value.direction = ''
 }
 
 async function loadSkillTree() {
@@ -254,6 +274,7 @@ function addNode() {
     id: `node-${Date.now()}`,
     name: nodeForm.value.name,
     category: nodeForm.value.category,
+    direction: nodeForm.value.direction,
     level: nodeForm.value.level,
     status: nodeForm.value.status,
     x: 0,
@@ -262,7 +283,7 @@ function addNode() {
 
   arrangeNodes()
   showAddDialog.value = false
-  nodeForm.value = { name: '', category: '', level: '入门', status: 'planning' }
+  nodeForm.value = { name: '', category: '', direction: '', level: '入门', status: 'planning' }
   ElMessage.success('添加成功')
   updateChart()
 }

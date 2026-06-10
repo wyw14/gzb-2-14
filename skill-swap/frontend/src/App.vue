@@ -49,6 +49,9 @@
                   <el-dropdown-item command="profile">
                     <el-icon><User /></el-icon>个人中心
                   </el-dropdown-item>
+                  <el-dropdown-item command="categories">
+                    <el-icon><Setting /></el-icon>分类管理
+                  </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <el-icon><SwitchButton /></el-icon>退出登录
                   </el-dropdown-item>
@@ -75,7 +78,7 @@ import { useUserStore } from './stores/user'
 import { ElMessageBox } from 'element-plus'
 import {
   HomeFilled, Edit, Connection, ChatDotRound,
-  Share, Trophy, SwitchButton, User, ArrowDown
+  Share, Trophy, SwitchButton, User, ArrowDown, Setting
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -84,6 +87,8 @@ const userStore = useUserStore()
 async function handleCommand(command) {
   if (command === 'profile') {
     router.push('/profile')
+  } else if (command === 'categories') {
+    router.push('/admin/categories')
   } else if (command === 'logout') {
     try {
       await ElMessageBox.confirm('确定要退出登录吗？', '提示', {

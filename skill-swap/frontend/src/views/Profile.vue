@@ -32,6 +32,7 @@
           <div v-for="skill in filteredSkills" :key="skill.id" class="skill-item">
             <span class="skill-name">{{ skill.name }}</span>
             <span class="skill-level" v-if="skill.level">{{ skill.level }}</span>
+            <span class="skill-category-label">{{ getCategoryLabel(skill) }}</span>
             <span class="skill-desc">{{ skill.description }}</span>
           </div>
         </div>
@@ -103,6 +104,7 @@ import { Edit } from '@element-plus/icons-vue'
 const userStore = useUserStore()
 const mySkills = ref([])
 const reviews = ref([])
+const categories = ref([])
 const skillTab = ref('teach')
 const showEditDialog = ref(false)
 const saving = ref(false)
@@ -119,10 +121,23 @@ const filteredSkills = computed(() =>
 )
 
 onMounted(async () => {
+  await loadCategories()
   await loadMySkills()
   await loadReviews()
   initEditForm()
 })
+
+async function loadCategories() {
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
+  categories.value = res.data
+}
+
+function getCategoryLabel(skill) {
+  const cat = categories.value.find(c => c.id === skill.category)
+  if (!cat) return skill.category
+  const dir = cat.directions.find(d => d.id === skill.direction)
+  return dir ? `${cat.icon} ${cat.name} / ${dir.name}` : `${cat.icon} ${cat.name}`
+}
 
 function initEditForm() {
   const prefs = userStore.user?.preferences || {}
@@ -262,12 +277,21 @@ function formatTime(time) {
 
 .skill-item {
   display: grid;
-  grid-template-columns: 1fr auto 2fr;
+  grid-template-columns: 1fr auto auto 2fr;
   gap: 16px;
   align-items: center;
   padding: 16px;
   background: #fafafa;
   border-radius: 8px;
+}
+
+.skill-category-label {
+  color: #667eea;
+  font-size: 13px;
+  background: #667eea15;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
 }
 
 .skill-name {

@@ -40,7 +40,19 @@ export const skillAPI = {
   createSkill: (data) => api.post('/skills', data),
   updateSkill: (id, data) => api.put(`/skills/${id}`, data),
   deleteSkill: (id) => api.delete(`/skills/${id}`),
-  getCategories: () => api.get('/skill-categories')
+  getCategories: (params) => api.get('/skill-categories', { params })
+}
+
+export const categoryAPI = {
+  getCategories: (params) => api.get('/skill-categories', { params }),
+  createCategory: (data) => api.post('/skill-categories', data),
+  updateCategory: (id, data) => api.put(`/skill-categories/${id}`, data),
+  toggleCategory: (id) => api.put(`/skill-categories/${id}/toggle`),
+  deleteCategory: (id) => api.delete(`/skill-categories/${id}`),
+  createDirection: (catId, data) => api.post(`/skill-categories/${catId}/directions`, data),
+  updateDirection: (catId, dirId, data) => api.put(`/skill-categories/${catId}/directions/${dirId}`, data),
+  toggleDirection: (catId, dirId) => api.put(`/skill-categories/${catId}/directions/${dirId}/toggle`),
+  deleteDirection: (catId, dirId) => api.delete(`/skill-categories/${catId}/directions/${dirId}`)
 }
 
 export const matchAPI = {

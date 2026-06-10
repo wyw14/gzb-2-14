@@ -7,8 +7,11 @@
         <el-input v-model="filters.keyword" placeholder="搜索技能" clearable style="width: 200px">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-select v-model="filters.category" placeholder="技能类别" clearable style="width: 160px">
-          <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        <el-select v-model="filters.category" placeholder="技能领域" clearable style="width: 160px" @change="onCategoryChange">
+          <el-option v-for="cat in activeCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        </el-select>
+        <el-select v-model="filters.direction" placeholder="具体方向" clearable style="width: 160px" :disabled="!filters.category">
+          <el-option v-for="dir in activeDirections" :key="dir.id" :label="dir.name" :value="dir.id" />
         </el-select>
         <el-slider v-model="filters.minScore" :min="0" :max="100" :step="10" style="width: 200px" />
         <span class="slider-label">最低契合度: {{ filters.minScore }}%</span>
@@ -99,7 +102,18 @@ const categories = ref([])
 const filters = ref({
   keyword: '',
   category: '',
+  direction: '',
   minScore: 30
+})
+
+const activeCategories = computed(() =>
+  categories.value.filter(c => c.active)
+)
+
+const activeDirections = computed(() => {
+  if (!filters.value.category) return []
+  const cat = categories.value.find(c => c.id === filters.value.category)
+  return cat ? cat.directions.filter(d => d.active) : []
 })
 
 const filteredMatches = computed(() => {
@@ -121,7 +135,7 @@ onMounted(async () => {
 })
 
 async function loadCategories() {
-  const res = await skillAPI.getCategories()
+  const res = await skillAPI.getCategories({ activeOnly: 'true' })
   categories.value = res.data
 }
 
@@ -129,11 +143,16 @@ async function loadMatches() {
   try {
     const params = { minScore: filters.value.minScore }
     if (filters.value.category) params.category = filters.value.category
+    if (filters.value.direction) params.direction = filters.value.direction
     const res = await matchAPI.getMatches(params)
     matches.value = res.data
   } catch (e) {
     ElMessage.error('加载匹配失败')
   }
+}
+
+function onCategoryChange() {
+  filters.value.direction = ''
 }
 
 function getScoreClass(score) {
